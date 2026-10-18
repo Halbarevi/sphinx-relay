@@ -1,0 +1,43 @@
+name: Lint, format and build
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  lint-format-build:
+    name: Lint, format and build
+    runs-on:
+      - ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.ACTIONS_PAT }}
+      - name: install npm dependencies
+        run: npm i
+      - name: lint, format, build and push automatic fixes
+        run: |
+          COMMIT_MESSAGE=$(git log --format=%B -n 1 ${{ github.sha }})
+          if [[ $COMMIT_MESSAGE == *"[ci commit]"* ]]; then
+            echo "Commit message contains [ci commit], exiting workflow."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          shopt -s globstar
+          npm run lint || echo -n
+          npx prettier --config .prettierrc --ignore-path .prettierignore -w *.ts src/**/*.ts
+          git add *.ts src
+          git commit -m '[ci commit] Lint and format code' || echo -n
+          git push
+          npm run build
+          git add dist --force
+          git commit -m '[ci commit] Automatic build' || echo -n
+          git push
+          bash grpc_gen_types.sh
+          npm run build
+          git add src/grpc/types src/grpc/proto.ts dist --force
+          git commit -m '[ci commit] Update proto files and types' || echo -n
+          git push

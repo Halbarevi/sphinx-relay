@@ -1,0 +1,34 @@
+name: Update proto files
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+
+jobs:
+  update_proto:
+    runs-on:
+      - ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: checkout LND
+        uses: actions/checkout@v3
+        with:
+          repository: lightningnetwork/lnd
+          path: lnd
+      - name: update proto files
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          find lnd/lnrpc -name '*.proto' -exec bash -c 'test -e proto/`basename {}` && cp {} proto' \;
+          sed -i 's/^import.*\//import "/' proto/*
+          git add proto
+      - name: update generated types
+        run: |
+          npm i
+          bash grpc_gen_types.sh
+          npm run build
+          git add src/grpc/types src/grpc/proto.ts dist
+      - name: commit changes
+        run: |
+          git commit -m 'Update proto files and types' || echo -n
+          git push

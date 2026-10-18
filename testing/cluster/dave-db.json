@@ -1,0 +1,13 @@
+{
+  "development": {
+    "dialect": "postgres",
+    "host": "localhost",
+    "username": "postgres",
+    "password": "sphinx",
+    "database": "postgres",
+    "sslmode": "disable",
+    "dialectOptions": {
+      "connectionString": "postgres://postgres:sphinx@localhost:5432/postgres?sslmode=disable"
+    }
+  }
+}
